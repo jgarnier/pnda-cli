@@ -86,6 +86,13 @@ else
   exit 2
 fi
 
+if [ "x$SECURITY_CERTS_TARBALL" != "x" ]; then
+  mv /tmp/$SECURITY_CERTS_TARBALL /srv/salt
+  SECURITY_CERTS_TARBALL_HASH=`md5sum $SECURITY_CERTS_TARBALL | awk '{ print $1 }'`
+else
+  SECURITY_CERTS_TARBALL_HASH=''
+fi
+
 MINE_FUNCTIONS_NETWORK_INTERFACE="eth0"
 if [ "x$MINE_FUNCTIONS_NETWORK_IP_ADDRS_NIC" != "x" ]; then
   MINE_FUNCTIONS_NETWORK_INTERFACE="$MINE_FUNCTIONS_NETWORK_IP_ADDRS_NIC"
@@ -132,9 +139,15 @@ packages_server:
 hdp:
   hdp_core_stack_repo: '$PNDA_MIRROR/mirror_hdp/HDP/$HDP_OS/2.6.3.0-235/'
   hdp_utils_stack_repo: '$PNDA_MIRROR/mirror_hdp/HDP-UTILS-1.1.0.21/repos/$HDP_OS/'
+
 mine_functions:
   network.ip_addrs: [$MINE_FUNCTIONS_NETWORK_INTERFACE]
   grains.items: []
+
+security:
+  security: $SECURITY
+  security_certs_tarball: '/srv/salt/$SECURITY_CERTS_TARBALL'
+  security_certs_tarball_hash: '$SECURITY_CERTS_TARBALL_HASH'
 EOF
 
 if [ "x$NTP_SERVERS" != "x" ] ; then
