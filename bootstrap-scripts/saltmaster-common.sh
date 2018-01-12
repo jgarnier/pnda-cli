@@ -87,10 +87,27 @@ else
 fi
 
 if [ "x$SECURITY_CERTS_TARBALL" != "x" ]; then
-  mv /tmp/$SECURITY_CERTS_TARBALL /srv/salt
-  SECURITY_CERTS_TARBALL_HASH=`md5sum $SECURITY_CERTS_TARBALL | awk '{ print $1 }'`
-else
-  SECURITY_CERTS_TARBALL_HASH=''
+  SECURITY_CERTS_TARBALL_HASH=`md5sum /tmp/$SECURITY_CERTS_TARBALL | awk '{ print $1 }'`
+  if [ ! -e /srv/security-certs/.${SECURITY_CERTS_TARBALL_HASH} ]; then
+    if [ -d /srv/security-certs ]; then rm -rf /srv/security-certs; fi
+    mkdir /srv/security-certs
+    tar zxf /tmp/$SECURITY_CERTS_TARBALL --strip-components=1 -C /srv/security-certs 
+    touch /srv/security-certs/.${SECURITY_CERTS_TARBALL_HASH}
+  fi
+  for i in `find /srv/security-certs/ -maxdepth 1 -mindepth 1 -type d -exec basename {} \;`; do 
+    echo $i:
+    for j in `find /srv/security-certs/$i -maxdepth 1 -mindepth 1 -type f -name *.crt`; do
+      echo "  cert: |"
+      sed  's/^/    /' $j
+      echo "  cn: "$(openssl x509 -in $j -subject | grep -i '^subject'  | sed -e 's/^subject.*CN=\([a-zA-Z0-9\.\-\*]*\).*$/\1/')
+      break;
+    done 
+    for j in `find /srv/security-certs/$i -maxdepth 1 -mindepth 1 -type f -name *.key`; do
+      echo "  key: |"
+      sed  's/^/    /' $j
+      break;
+    done 
+  done
 fi
 
 MINE_FUNCTIONS_NETWORK_INTERFACE="eth0"
