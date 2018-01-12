@@ -93,21 +93,29 @@ if [ "x$SECURITY_CERTS_TARBALL" != "x" ]; then
     mkdir /srv/security-certs
     tar zxf /tmp/$SECURITY_CERTS_TARBALL --strip-components=1 -C /srv/security-certs 
     touch /srv/security-certs/.${SECURITY_CERTS_TARBALL_HASH}
+    # Generate pillar files to store the security material
+    for i in `find /srv/security-certs/ -maxdepth 1 -mindepth 1 -type d -exec basename {} \;`; do
+      for j in `find /srv/security-certs/$i -maxdepth 1 -mindepth 1 -type f -name '*.crt'`; do
+        out_dir='/srv/salt/platform-salt/pillar/certs'
+        mkdir -p $out_dir
+        out_file="$out_dir/$i.sls"
+        echo "Generating $out_file"
+        echo -e "$i:\n  cert: |" > $out_file
+        sed  's/^/    /' $j >> $out_file
+        break
+      done;
+      for j in `find /srv/security-certs/$i -maxdepth 1 -mindepth 1 -type f -name '*.key'`; do
+        out_dir='/srv/salt/platform-salt/pillar/keys'
+        mkdir -p $out_dir
+        out_file="$out_dir/$i.sls"
+        echo "Generating $out_file"
+        echo -e "$i:\n  key: |" > $out_file
+        sed  's/^/    /' $j >> $out_file
+        break;
+      done;
+    done;
+    salt '*' saltutil.refresh_pillar
   fi
-  for i in `find /srv/security-certs/ -maxdepth 1 -mindepth 1 -type d -exec basename {} \;`; do 
-    echo $i:
-    for j in `find /srv/security-certs/$i -maxdepth 1 -mindepth 1 -type f -name *.crt`; do
-      echo "  cert: |"
-      sed  's/^/    /' $j
-      echo "  cn: "$(openssl x509 -in $j -subject | grep -i '^subject'  | sed -e 's/^subject.*CN=\([a-zA-Z0-9\.\-\*]*\).*$/\1/')
-      break;
-    done 
-    for j in `find /srv/security-certs/$i -maxdepth 1 -mindepth 1 -type f -name *.key`; do
-      echo "  key: |"
-      sed  's/^/    /' $j
-      break;
-    done 
-  done
 fi
 
 MINE_FUNCTIONS_NETWORK_INTERFACE="eth0"
