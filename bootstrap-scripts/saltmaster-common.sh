@@ -95,26 +95,24 @@ if [ "x$SECURITY_CERTS_TARBALL" != "x" ]; then
     touch /srv/security-certs/.${SECURITY_CERTS_TARBALL_HASH}
     # Generate pillar files to store the security material
     for i in `find /srv/security-certs/ -maxdepth 1 -mindepth 1 -type d -exec basename {} \;`; do
-      for j in `find /srv/security-certs/$i -maxdepth 1 -mindepth 1 -type f -name '*.crt'`; do
-        out_dir='/srv/salt/platform-salt/pillar/certs'
-        mkdir -p $out_dir
-        out_file="$out_dir/$i.sls"
+      out_dir="/srv/salt/platform-salt/pillar/roles/$i"
+      mkdir -p $out_dir
+      for j in `find /srv/security-certs/$i -maxdepth 1 -mindepth 1 -type f -name '*.pem'`; do
+        out_file="$out_dir/$i-pem.sls"
         echo "Generating $out_file"
         echo -e "$i:\n  cert: |" > $out_file
         sed  's/^/    /' $j >> $out_file
         break
       done;
       for j in `find /srv/security-certs/$i -maxdepth 1 -mindepth 1 -type f -name '*.key'`; do
-        out_dir='/srv/salt/platform-salt/pillar/keys'
-        mkdir -p $out_dir
-        out_file="$out_dir/$i.sls"
+        out_file="$out_dir/$i-key.sls"
         echo "Generating $out_file"
         echo -e "$i:\n  key: |" > $out_file
         sed  's/^/    /' $j >> $out_file
         break;
       done;
     done;
-    salt '*' saltutil.refresh_pillar
+    #salt '*' saltutil.refresh_pillar
   fi
 fi
 
